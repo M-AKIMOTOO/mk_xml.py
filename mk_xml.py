@@ -19,6 +19,7 @@ HISTORY = """
  2022-05-25 update13
  2023-02-07 update14
  2023-07-15 update15
+ 2023-11-27 update16
 
  Edit by M.AKIMOTO
 ### """
@@ -46,15 +47,17 @@ class original_function :
     def freq_conv(f) :
         if   f in ["X", "+8192e+6", "8192"] :
             freq_out = "+8192e+6"
+            freq_label = "X-band"
         elif f in ["C", "+6600e+6", "6600"] :
             freq_out = "+6600e+6"
+            freq_label = "C-band"
         elif f == False :
             print("%s Please specify --frequency X/C." % error)
             quit()
         else :
             print("%s %s; Such a frequency code don't exist !!" % (error, f))
             quit()
-        return freq_out
+        return freq_out, freq_label
     
     # fft points check
     def fft_point_check(power_of_2) :
@@ -210,7 +213,7 @@ if xml == False :
     obs_scan_list    = ""
 
     # convert frequency (X, C) to 8192, 6600
-    freq = original_function.freq_conv(freq)
+    freq, freq_label = original_function.freq_conv(freq)
 
     # FFT point check
     original_function.fft_point_check(fft)
@@ -254,8 +257,12 @@ if xml == False :
         sked_line2 = "PREOB"  in drg_line
         
         if sked_line1 == True : # target coordinate
-            source_name, _, ra_h, ra_m, ra_s, dec_deg, dec_m, dec_s = drg_line.split()[:8]
-            source_line += f"<source name=\'{source_name}\'><ra>{ra_h}h{ra_m}m{ra_s}</ra><dec>{dec_deg}d{dec_m}\'{dec_s}</dec></source>\n" \
+            source_name1, source_name2, ra_h, ra_m, ra_s, dec_deg, dec_m, dec_s = drg_line.split()[:8]
+            source_line += f"<source name=\'{source_name1}\'><ra>{ra_h}h{ra_m}m{ra_s}</ra><dec>{dec_deg}d{dec_m}\'{dec_s}</dec></source>\n"
+            if source_name2 == "$" :
+                continue
+            if source_name1 != source_name2 :
+                source_line += f"<source name=\'{source_name2}\'><ra>{ra_h}h{ra_m}m{ra_s}</ra><dec>{dec_deg}d{dec_m}\'{dec_s}</dec></source>\n"
 
         elif sked_line2 == True : # target obsevation schedule
             
@@ -275,44 +282,49 @@ if xml == False :
                 rectime_scan = datetime.datetime.strptime(rectime, "%y%j%H%M%S").strftime("%Y/%j %H:%M:%S")
                 label = "%.0f" % i
                 file_label = "%.0f" % i
-                            
+
             # Observation schedule list
             obs_scan_list += original_function.schedule_list(i, target.ljust(8), rectime, duration.rjust(4))
-            
+
             # target length < --length
             if i == scan[0] and int(duration) < length :
                 print("%s integration time (%.0f) is longer than duration (%s) of %s." % (error, length, duration, target))
                 quit()
-            
+
             if type_ == 1 :
                 each_epoch_start = "20%s" % rectime
-                skip_time        = "0"
+                skip_time        = 0
                 if i == scan[0] :
-                    duration_scan = "%s" % length
+                    duration_scan = "%s" % length # for fringe-finder
                 duration_time = duration
             elif type_ == 2 :
                 # calculate skip time
                 rectime_datetime   = datetime.datetime.strptime(rectime, "%y%j%H%M%S")
                 starttime_datetime = datetime.datetime.strptime(rectime_start, "%Y%j%H%M%S")
                 differential_time  = rectime_datetime - starttime_datetime
-                
+
                 skip_time     = differential_time.total_seconds()
-                duration_time = (int(skip_time) + int(duration))
+                duration_time = (int(skip_time) + int(duration))  # <length> in xml-file
                 duration_scan = (int(skip_time) + length)
-                
+
                 each_epoch_start = rectime_start
 
 
             doy2MonthDay = original_function.cal_month_day(rectime) # convert DOY to month & day
             each_epoch_start = datetime.datetime.strptime(each_epoch_start, "%Y%j%H%M%S").strftime("%Y/%j %H:%M:%S")
 
+
+            if skip_time < 0 :
+                print(f"{error}: <skip> time, {skip_time:5.0f} sec, in xml-file is less than 0.")
+                continue
+
             xml_process_line_before = "<process><epoch>%s</epoch><skip>%5.0f</skip><length>" % (each_epoch_start, skip_time)
             xml_process_line_after  = "</length><object>%8s</object><stations>%s</stations></process>" % (target, "".join(baseline))
             xml_process_line_scan_date = "<!-- scan %2d  obs-date: %s -->" % (i, doy2MonthDay)
             if i == scan[0] :
-                xml_process_line += "%s%5.0f%s %s <!-- fringe finder -->\n" % (xml_process_line_before, duration_scan, xml_process_line_after, xml_process_line_scan_date)
+                xml_process_line += "%s%5s%s %s <!-- fringe finder -->\n" % (xml_process_line_before, duration_scan, xml_process_line_after, xml_process_line_scan_date)
                                     
-            xml_process_line += "<!-- ### %s%5.0f%s ### --> %s\n" % (xml_process_line_before, duration_time, xml_process_line_after, xml_process_line_scan_date)
+            xml_process_line += "<!-- ### %s%5s%s ### --> %s\n" % (xml_process_line_before, duration_time, xml_process_line_after, xml_process_line_scan_date)
 
     if list_ == True :
         print(obs_scan_list)
@@ -328,12 +340,10 @@ if xml == False :
                 "L": ["YAMAGU34", "-3502567.576", "+3950885.734", "+3566449.115"]}
     recording_mode = {}
     if len(recorder) == 1 :
-
         for baseline_key in baseline :
             recording_mode[baseline_key] = recorder[0]
         recorder = recording_mode
     else :
-
         for rec in recorder :
             ant_key, ant_recorder = rec.split(":")
             recording_mode[ant_key] = ant_recorder.lower()
@@ -442,6 +452,8 @@ elif xml != False : # make xml-file of all scan
     # output in all
     if output != "1" :
         xml_all_output = output
+    
+    _, freq_label = freq, freq_label = original_function.freq_conv("%s" % int(xml_all_frequency/1000000))
 
     xml_stream_line.find("label").text = label
     xml_clock_line.find("delay").text = xml_all_total_delay
@@ -450,7 +462,7 @@ elif xml != False : # make xml-file of all scan
     xml_all = ET.tostring(xml_root, encoding='utf-8').decode(encoding='utf-8') # return XML as String
 
     # make xml-file of all scan Ver.
-    xml_name = "./%s_%s_%s.xml" % (os.path.basename(xml).split("_")[0], label, xml_all_baseline)
+    xml_name = "./%s_%s_%s_%s.xml" % (os.path.basename(xml).split("_")[0], label, xml_all_baseline, freq_label)
     xml_save = open(xml_name, "w")
     xml_save.write(xml_all)
     xml_save.close()
@@ -492,7 +504,7 @@ xml_clock = "<clock key='%s'><epoch>%s</epoch><delay>%s</delay><rate>%s</rate></
 
 # make xml-file
 xml_base = os.path.splitext(os.path.basename(drg))[0]
-xml_name = "%s_%.0f_%s.xml" % (xml_base, scan[0], "".join(baseline))
+xml_name = "%s_%.0f_%s_%s.xml" % (xml_base, scan[0], "".join(baseline), freq_label)
 xml_save = open(xml_name, "w")
 xml_save.write("%s\n" % xml_header)
 xml_save.write("%s\n" % xml_ADS)
