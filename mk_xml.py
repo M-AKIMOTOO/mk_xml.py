@@ -20,6 +20,7 @@ HISTORY = """
  2023-02-07 update14
  2023-07-15 update15
  2023-11-27 update16
+ 2024-01-20 update17
 
  Edit by M.AKIMOTO
 ### """
@@ -47,10 +48,10 @@ class original_function :
     def freq_conv(f) :
         if   f in ["X", "+8192e+6", "8192"] :
             freq_out = "+8192e+6"
-            freq_label = "X-band"
+            freq_label = "X"
         elif f in ["C", "+6600e+6", "6600"] :
             freq_out = "+6600e+6"
-            freq_label = "C-band"
+            freq_label = "C"
         elif f == False :
             print("%s Please specify --frequency X/C." % error)
             quit()
@@ -405,7 +406,7 @@ if xml == False :
 elif xml != False : # make xml-file of all scan
 
     xml_all = ""
-    file_label   = "scan"
+    file_label = "scan"
     
     xml_open = open(xml, "r").readlines()
 
@@ -444,7 +445,8 @@ elif xml != False : # make xml-file of all scan
 
     # label in all
     if label == False :
-        label = "all"
+        #label = "all"
+        label = original_function.freq_conv("%d" % (int(xml_all_frequency/1e6)))[1].lower()#.replace("-","")
     # fft in all
     if fft != "1024" :
         original_function.fft_point_check(fft) # check
@@ -462,7 +464,7 @@ elif xml != False : # make xml-file of all scan
     xml_all = ET.tostring(xml_root, encoding='utf-8').decode(encoding='utf-8') # return XML as String
 
     # make xml-file of all scan Ver.
-    xml_name = "./%s_%s_%s_%s.xml" % (os.path.basename(xml).split("_")[0], label, xml_all_baseline, freq_label)
+    xml_name = "./%s_all_%s_%s.xml" % (os.path.basename(xml).split("_")[0], xml_all_baseline, freq_label)
     xml_save = open(xml_name, "w")
     xml_save.write(xml_all)
     xml_save.close()
