@@ -21,6 +21,7 @@ HISTORY = """
  2023-07-15 update15
  2023-11-27 update16
  2024-01-20 update17
+ 2024-09-20 update18
 
  Edit by M.AKIMOTO
 ### """
@@ -289,7 +290,7 @@ if xml == False :
 
             # target length < --length
             if i == scan[0] and int(duration) < length :
-                print("%s integration time (%.0f) is longer than duration (%s) of %s." % (error, length, duration, target))
+                print("%s the integration time (%.0f) is longer than the duration (%s) of %s." % (error, length, duration, target))
                 quit()
 
             if type_ == 1 :
@@ -410,10 +411,17 @@ elif xml != False : # make xml-file of all scan
     
     xml_open = open(xml, "r").readlines()
 
+    xml_all_scan_line = 0
+    print(xml_open[0])
     # edit individual xml-file
     for xml_line in xml_open :
         
         if "<!-- ###" in xml_line : # xml-file all schedule <process>*</process>
+            
+            xml_all_scan_line += 1
+            if not xml_all_scan_line in scan :
+                continue
+            
             commentout_left  = re.findall("<!-- ###", xml_line)
             commentout_right = re.findall("### -->" , xml_line)
             xml_line = xml_line.replace("%s " % commentout_left[0] , "")
@@ -423,7 +431,6 @@ elif xml != False : # make xml-file of all scan
             continue
         else :
             xml_all += xml_line
-
 
     xml_root = ET.fromstring(xml_all)
 
@@ -454,6 +461,10 @@ elif xml != False : # make xml-file of all scan
     # output in all
     if output != "1" :
         xml_all_output = output
+    if len(scan) != 0 :
+        xml_out_label = "%s" % "_".join(list(map(str, scan)))
+    else :
+        xml_out_label = "all"
     
     _, freq_label = freq, freq_label = original_function.freq_conv("%s" % int(xml_all_frequency/1000000))
 
@@ -464,7 +475,7 @@ elif xml != False : # make xml-file of all scan
     xml_all = ET.tostring(xml_root, encoding='utf-8').decode(encoding='utf-8') # return XML as String
 
     # make xml-file of all scan Ver.
-    xml_name = "./%s_all_%s_%s.xml" % (os.path.basename(xml).split("_")[0], xml_all_baseline, freq_label)
+    xml_name = "./%s_%s_%s_%s.xml" % (os.path.basename(xml).split("_")[0], xml_out_label, xml_all_baseline, freq_label)
     xml_save = open(xml_name, "w")
     xml_save.write(xml_all)
     xml_save.close()
