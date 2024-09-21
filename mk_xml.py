@@ -155,7 +155,7 @@ parser.add_argument("--log"         , default=False     , type=str              
 parser.add_argument("--delay"       , default="+1.6e-06", type=float                                      , help="大雑把な遅延，YI では 1.6e-06 秒とし，これがデフォルトになっている．VLBI ではこのオプションを使って 0.0 秒を指定する．")
 parser.add_argument("--rate"        , default="+0.0e-00", type=float                                      , help="大雑把な遅延変化率，YI では 0.0 秒とし，これがデフォルトになっている．VLBI では Delay と Rate を補正するときに使用する．")
 parser.add_argument("--fft"         , default="1024"    , type=int                                        , help="FFT 点数．２の累乗でないとエラーが出る．")
-parser.add_argument("--scan"        , default="0"       , type=int  , nargs="+"                           , help="フリンジファインダーのスキャン番号．obscode_scan_baseline.xml のファイルが出力される（それぞれは DRG ファイルによる）．")
+parser.add_argument("--scan"        , default=[0]       , type=int  , nargs="+"                           , help="フリンジファインダーのスキャン番号．obscode_scan_baseline.xml のファイルが出力される（それぞれは DRG ファイルによる）．")
 parser.add_argument("--length"      , default="1"       , type=int                                        , help="遅延時間と遅延時間変化率の決定に用いるデータの積分時間．")
 parser.add_argument("--frequency"   , default=False     , type=str  , choices=["X","8192","C","6600"]     , help="相関処理をするデータの観測周波数．")
 parser.add_argument("--output"      , default="1"       , type=int                                        , help="相関出力速度．基本的に指定することはない．output = 1 は PP = 1 に相当する．")
@@ -412,26 +412,32 @@ elif xml != False : # make xml-file of all scan
     xml_open = open(xml, "r").readlines()
 
     xml_all_scan_line = 0
-    print(xml_open[0])
+    
     # edit individual xml-file
     for xml_line in xml_open :
         
         if "<!-- ###" in xml_line : # xml-file all schedule <process>*</process>
             
             xml_all_scan_line += 1
-            if not xml_all_scan_line in scan :
+            if 0 in scan :
+                pass
+            elif not xml_all_scan_line in scan :
                 continue
             
             commentout_left  = re.findall("<!-- ###", xml_line)
             commentout_right = re.findall("### -->" , xml_line)
             xml_line = xml_line.replace("%s " % commentout_left[0] , "")
             xml_line = xml_line.replace("%s"  % commentout_right[0], "")
-            xml_all += xml_line
+            xml_all += xml_line #(xml_line.split("\n")[0] + "  <!-- selected scan -->\n")
+            
+             
         elif "<!-- fringe finder -->" in xml_line :
+            continue
+        elif "<!-- selected scan -->" in xml_line :
             continue
         else :
             xml_all += xml_line
-
+    
     xml_root = ET.fromstring(xml_all)
 
     xml_clock_line = xml_root.find("clock")
@@ -461,7 +467,7 @@ elif xml != False : # make xml-file of all scan
     # output in all
     if output != "1" :
         xml_all_output = output
-    if len(scan) != 0 :
+    if not 0 in scan :
         xml_out_label = "%s" % "_".join(list(map(str, scan)))
     else :
         xml_out_label = "all"
@@ -472,14 +478,20 @@ elif xml != False : # make xml-file of all scan
     xml_clock_line.find("delay").text = xml_all_total_delay
     xml_clock_line.find("rate").text  = xml_all_total_rate
 
-    xml_all = ET.tostring(xml_root, encoding='utf-8').decode(encoding='utf-8') # return XML as String
 
     # make xml-file of all scan Ver.
     xml_name = "./%s_%s_%s_%s.xml" % (os.path.basename(xml).split("_")[0], xml_out_label, xml_all_baseline, freq_label)
+    with open(xml_name, mode='w') as out_file:
+        ET.canonicalize(xml_all, out=out_file, with_comments=True)
+
+    """ old version
+    xml_all = ET.tostring(xml_root, encoding='utf-8').decode(encoding='utf-8') # return XML as String
+
     xml_save = open(xml_name, "w")
     xml_save.write(xml_all)
     xml_save.close()
-
+    """
+        
     # parameter check
     print("###")
     print(" xml-file    : %s" % xml)
