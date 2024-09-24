@@ -470,6 +470,8 @@ elif xml != False : # make xml-file of all scan
         xml_all_output = output
     if not 0 in scan :
         xml_out_label = "%s" % "_".join(list(map(str, scan)))
+    elif label != False :
+        xml_out_label = label
     else :
         xml_out_label = "all"
     
@@ -478,7 +480,7 @@ elif xml != False : # make xml-file of all scan
     xml_stream_line.find("label").text = label
     xml_clock_line.find("delay").text = xml_all_total_delay
     xml_clock_line.find("rate").text  = xml_all_total_rate
-    print(xml_clock_line.find("delay").text)
+    
 
     # make xml-file of all scan Ver.
     xml_name = "./%s_%s_%s_%s.xml" % (os.path.basename(xml).split("_")[0], xml_out_label, xml_all_baseline, freq_label)
