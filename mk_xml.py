@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # AKIMOTO
 # history as below
 HISTORY = """
@@ -22,6 +22,7 @@ HISTORY = """
  2023-11-27 update16
  2024-01-20 update17
  2024-09-20 update18
+ 2024-09-24 update19
 
  Edit by M.AKIMOTO
 ### """
@@ -477,15 +478,15 @@ elif xml != False : # make xml-file of all scan
     xml_stream_line.find("label").text = label
     xml_clock_line.find("delay").text = xml_all_total_delay
     xml_clock_line.find("rate").text  = xml_all_total_rate
-
+    print(xml_clock_line.find("delay").text)
 
     # make xml-file of all scan Ver.
     xml_name = "./%s_%s_%s_%s.xml" % (os.path.basename(xml).split("_")[0], xml_out_label, xml_all_baseline, freq_label)
+    xml_all = ET.tostring(xml_root, encoding='utf-8').decode(encoding='utf-8') # return XML as String
     with open(xml_name, mode='w') as out_file:
         ET.canonicalize(xml_all, out=out_file, with_comments=True)
 
     """ old version
-    xml_all = ET.tostring(xml_root, encoding='utf-8').decode(encoding='utf-8') # return XML as String
 
     xml_save = open(xml_name, "w")
     xml_save.write(xml_all)
@@ -542,3 +543,4 @@ xml_save.write("</schedule>")
 xml_save.close()
 
 print("make file > %s" % xml_name)
+
