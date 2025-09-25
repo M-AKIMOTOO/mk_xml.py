@@ -369,9 +369,9 @@ if xml == False :
     for baseline_key in sorted(baseline) :
         
         if recording_mode[baseline_key] == "octadisk" :
-            ads = "ADS3000_OCT"
-        elif recording_mode[baseline_key] == "vsrec" :
             ads = "ADS3000"
+        elif recording_mode[baseline_key] == "vsrec" :
+            ads = "VSREC"
             bit_shuffle += f"<shuffle key='{baseline_key}'>24,25,26,27,28,29,30,31,16,17,18,19,20,21,22,23,8,9,10,11,12,13,14,15,0,1,2,3,4,5,6,7</shuffle>\n"
             
         xml_station1 += f"<station key='{baseline_key}'><name>{ant_info[f'{baseline_key}'][0]}</name><pos-x>{ant_info[f'{baseline_key}'][1]}</pos-x><pos-y>{ant_info[f'{baseline_key}'][2]}</pos-y><pos-z>{ant_info[f'{baseline_key}'][3]}</pos-z><terminal>{ads}</terminal></station>\n"
@@ -519,8 +519,8 @@ xml_header = \
 xml_ADS = \
 """
 <terminal name='ADS1000'><speed>1024000000</speed><channel> 1</channel><bit>2</bit><level>-1.5,+0.5,-0.5,+1.5</level></terminal>
-<terminal name='ADS3000'><speed>1024000000</speed><channel>1</channel><bit>2</bit><level>-1.5,-0.5,+0.5,+1.5</level></terminal>  
-<terminal name='ADS3000_OCT'><speed>1024000000</speed><channel>1</channel><bit>2</bit><level>-1.5,+0.5,-0.5,+1.5</level></terminal>"""
+<terminal name='VSREC'><speed>1024000000</speed><channel>1</channel><bit>2</bit><level>-1.5,-0.5,+0.5,+1.5</level></terminal>  
+<terminal name='ADS3000'><speed>1024000000</speed><channel>1</channel><bit>2</bit><level>-1.5,+0.5,-0.5,+1.5</level></terminal>"""
 
 xml_stream = \
 """<stream>
