@@ -483,7 +483,7 @@ elif xml != False : # make xml-file of all scan
     
 
     # make xml-file of all scan Ver.
-    xml_name = "./%s_%s_%s_%s.xml" % (os.path.basename(xml).split("_")[0], xml_out_label, xml_all_baseline, freq_label)
+    xml_name = "./%s_all_%s_%s.xml" % (os.path.basename(xml).split("_")[0], xml_all_baseline, freq_label)
     xml_all = ET.tostring(xml_root, encoding='utf-8').decode(encoding='utf-8') # return XML as String
     with open(xml_name, mode='w') as out_file:
         ET.canonicalize(xml_all, out=out_file, with_comments=True)
